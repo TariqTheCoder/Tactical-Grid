@@ -1,26 +1,47 @@
-Tactical Grid - A Battlecode Planner
-Hi guys, this is my open source battlecode planner! It has multiple tools including waypoints, text, drawing, and dynamic placing of units and maps!
+# Tactical Grid – A Battlecode Planner
 
-But what makes this project different is that it supports multiple users annotating and editing at the same time, all at once!
+Hi guys! This is my **open source Battlecode planner**.  
+It has multiple tools including **waypoints, text, drawing**, and **dynamic placing of units and maps**.  
 
-How to use:
-All you have to do is upload a map (image so take a screenshot of any map not .bc26 file) and unit (robot) images (take a screenshot of all the game units you are experimenting with). You should also make a blank unit (tiny screenshot of map tiling) to block out starting units that appear on the map. Then you are ready to start annotating and planning alongside team members in real-time
+What makes this project different is that it supports **multiple users annotating and editing at the same time, all at once!**
 
-Features:
-Pen tool - you can pick any colour and use it to draw on the map
-Erasor tool - erases user objects
-Line and arrow tool - More annotation
-Zooming tool - Buttons, touchpad, and ctrl+/- works on the actual map (not website itself)
-Strategy section where you can type notes about your strat and share with team members
-Map elements - Markers, text annotations, and unit icons
-Layers - Map (grid) layer,, units layer, and drawings layer
-Save section, where you can download a photo of your annotations
+---
 
-Most importantly - Collaboration mode where you can share a project id to collaborate in real time (no delay, all edits happen immediately). This can also be used to save work for later
+## How to Use
 
-Links
-Website: https://tariqthecoder.github.io/Tactical-Grid/
-Open source github: https://github.com/TariqTheCoder/Tactical-Grid
+1. **Upload a map** – Use an image (screenshot of any map; not a `.bc26` file).  
+2. **Upload unit (robot) images** – Screenshots of all the game units you are experimenting with.  
+3. **Create a blank unit** – A tiny screenshot of map tiling to block out starting units that appear on the map.  
+4. **Start annotating** – You’re ready to plan alongside team members in **real-time**.  
 
-If you find this tool helpful, please star it on github!
-Thanks
+---
+
+## Features
+
+- **Pen Tool** – Pick any color to draw on the map.  
+- **Eraser Tool** – Erase user objects.  
+- **Line and Arrow Tool** – For advanced annotations.  
+- **Zooming Tool** – Works on the map itself; use buttons, touchpad, or Ctrl + / -.  
+- **Strategy Section** – Type notes about your strategy and share with team members.  
+- **Map Elements** – Add **markers, text annotations, and unit icons**.  
+- **Layers** – Separate layers for **grid**, **units**, and **drawings**.  
+- **Save Section** – Download an image of your annotations.  
+
+---
+
+## Collaboration Mode
+
+- Share a **project ID** to collaborate in real time.  
+- **No delay** – all edits happen immediately.  
+- Can also be used to **save work for later**.  
+
+---
+
+## Links
+
+- **Website:** [https://tariqthecoder.github.io/Tactical-Grid/](https://tariqthecoder.github.io/Tactical-Grid/)  
+- **Open Source GitHub:** [https://github.com/TariqTheCoder/Tactical-Grid](https://github.com/TariqTheCoder/Tactical-Grid)  
+
+---
+
+If you find this tool helpful, please **star it on GitHub!** Thanks!
