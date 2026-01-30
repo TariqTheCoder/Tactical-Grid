@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3e130a3d-34f6-49d4-9f7d-7c829bb92bf0" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/javascript/utils.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/style/stats.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/planner.js" beforeDir="false" afterPath="$PROJECT_DIR$/planner.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/planner.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/javascript/planner.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stats.html" beforeDir="false" afterPath="$PROJECT_DIR$/PublicStats.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/style/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,6 +24,7 @@
       <list>
         <option value="HTML File" />
         <option value="package.json" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -62,6 +68,9 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tariq\WebstormProjects\Battlecode Planner\src\javascript" />
+      <recent name="C:\Users\tariq\WebstormProjects\Battlecode Planner\src\style" />
+      <recent name="C:\Users\tariq\WebstormProjects\Battlecode Planner\src" />
       <recent name="C:\Users\tariq\WebstormProjects\Battlecode Planner" />
       <recent name="C:\Users\tariq\WebstormProjects\Battlecode Planner\test" />
     </key>
@@ -82,7 +91,7 @@
       <updated>1769670453090</updated>
       <workItem from="1769670454133" duration="7298000" />
       <workItem from="1769733057634" duration="1902000" />
-      <workItem from="1769773593530" duration="5315000" />
+      <workItem from="1769773593530" duration="6059000" />
     </task>
     <servers />
   </component>
