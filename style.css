@@ -25,26 +25,34 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-gradient);
     color: var(--text);
-    height: 100vh;
-    overflow: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
-/* ===== HEADER ===== */
 header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 60px;
+    z-index: 200;
+    background: rgba(18, 24, 49, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    background: rgba(18, 24, 49, 0.95);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-    z-index: 100;
 }
 
 .logo {
@@ -74,7 +82,6 @@ header {
     gap: 10px;
 }
 
-/* ===== BUTTONS ===== */
 button {
     font-family: 'Inter', sans-serif;
     font-size: 14px;
@@ -130,7 +137,6 @@ button {
     background: rgba(72, 187, 120, 0.1);
 }
 
-/* ===== COLLABORATION PANEL ===== */
 .collab-panel {
     position: fixed;
     top: 60px;
@@ -359,33 +365,34 @@ button {
     50% { opacity: 0.5; }
 }
 
-/* ===== MAIN LAYOUT ===== */
 main {
+    margin-top: 60px;
+    height: calc(100vh - 60px);
     display: grid;
     grid-template-columns: 1fr 360px;
-    height: calc(100vh - 60px);
-    gap: 0;
+    overflow: hidden;
 }
 
-/* ===== MAP CONTAINER ===== */
 .map-container {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
     background: var(--bg);
 }
 
 .map-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(18, 24, 49, 0.9);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: rgba(18, 24, 49, 0.9);
-    border-bottom: 1px solid var(--border);
     gap: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
 }
 
 .map-toolbar::-webkit-scrollbar {
@@ -477,11 +484,10 @@ main {
     text-align: center;
 }
 
-/* ===== MAP VIEWPORT ===== */
 #map-viewport {
-    flex: 1;
-    overflow: auto;
     position: relative;
+    height: 100%;
+    overflow: auto;
     background:
             repeating-linear-gradient(0deg, var(--grid), var(--grid) 1px, transparent 1px, transparent 50px),
             repeating-linear-gradient(90deg, var(--grid), var(--grid) 1px, transparent 1px, transparent 50px),
@@ -493,9 +499,11 @@ main {
 }
 
 #map-world {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     transform-origin: 0 0;
-    transition: transform 0.1s ease-out;
+    will-change: transform;
 }
 
 #map-image,
@@ -509,7 +517,6 @@ main {
     cursor: crosshair;
 }
 
-/* ===== MAP ELEMENTS ===== */
 .unit,
 .map-text,
 .marker {
@@ -568,7 +575,6 @@ main {
     transform: translate(-50%, -50%);
 }
 
-/* ===== MINIMAP ===== */
 .minimap {
     position: absolute;
     bottom: 20px;
@@ -581,6 +587,7 @@ main {
     overflow: hidden;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    z-index: 60;
 }
 
 #minimap-canvas {
@@ -596,14 +603,10 @@ main {
     pointer-events: none;
 }
 
-/* ===== SIDEBAR ===== */
 #sidebar {
+    overflow-y: auto;
     background: linear-gradient(180deg, var(--panel-dark), var(--bg));
     border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 #sidebar::-webkit-scrollbar {
@@ -644,7 +647,6 @@ main {
     stroke-width: 2.5;
 }
 
-/* ===== PANELS ===== */
 .panel {
     background: var(--panel);
     border-radius: 10px;
@@ -659,7 +661,6 @@ main {
     min-height: 200px;
 }
 
-/* ===== TABS ===== */
 .tabs {
     display: flex;
     gap: 6px;
@@ -687,7 +688,6 @@ main {
     border-color: var(--accent);
 }
 
-/* ===== TEXTAREA ===== */
 textarea {
     width: 100%;
     min-height: 220px;
@@ -712,7 +712,6 @@ textarea::placeholder {
     color: var(--text-dim);
 }
 
-/* ===== MARKDOWN PREVIEW ===== */
 #markdown-preview {
     display: none;
     font-size: 14px;
@@ -763,7 +762,6 @@ textarea::placeholder {
     font-weight: 600;
 }
 
-/* ===== ACTION BUTTONS ===== */
 .action-btn {
     width: 100%;
     padding: 10px 14px;
@@ -781,7 +779,6 @@ textarea::placeholder {
     color: var(--accent);
 }
 
-/* ===== FILE UPLOAD ===== */
 .unit-upload {
     display: flex;
     flex-direction: column;
@@ -814,7 +811,6 @@ textarea::placeholder {
     color: var(--accent);
 }
 
-/* ===== LAYERS PANEL ===== */
 .layers-panel {
     gap: 8px;
 }
@@ -847,14 +843,12 @@ textarea::placeholder {
     flex: 1;
 }
 
-/* ===== HINTS ===== */
 .hint {
     font-size: 12px;
     color: var(--text-dim);
     font-style: italic;
 }
 
-/* ===== FOOTER ===== */
 footer {
     margin-top: auto;
     padding: 16px;
@@ -879,7 +873,6 @@ footer {
     text-align: center;
 }
 
-/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -895,7 +888,11 @@ footer {
     animation: fadeIn 0.3s ease;
 }
 
-/* ===== RESPONSIVE ===== */
+.map-toolbar,
+.minimap {
+    transform: none !important;
+}
+
 @media (max-width: 1024px) {
     main {
         grid-template-columns: 1fr 320px;

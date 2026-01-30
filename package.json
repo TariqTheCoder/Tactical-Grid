@@ -1,0 +1,17 @@
+{
+  "name": "battlecode-planner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "planner.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TariqTheCoder/Tactical-Grid.git"
+  },
+  "private": true,
+  "dependencies": {
+    "peerjs": "^1.5.5"
+  }
+}

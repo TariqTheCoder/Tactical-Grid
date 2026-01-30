@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TacticalGrid - Collaborative Battle Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- PeerJS for P2P collaboration -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+            <path d="M2 17L12 22L22 17"/>
+            <path d="M2 12L12 17L22 12"/>
+        </svg>
+        <h1>Tactical<span>Grid</span></h1>
+    </div>
+    <div class="header-controls">
+        <button class="btn-collab" onclick="toggleCollabPanel()" id="collab-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span id="collab-count">Solo</span>
+        </button>
+        <button class="btn-primary" onclick="uploadMap()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Map
+        </button>
+        <button class="btn-secondary" onclick="saveSnapshot()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            Export
+        </button>
+    </div>
+</header>
+
+<!-- Timeline Controls -->
+<div class="timeline-bar">
+    <div class="timeline-controls">
+        <button class="timeline-btn" onclick="togglePlayback()" id="play-btn" title="Play/Pause (Space)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="play-icon">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="pause-icon" style="display:none;">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+        </button>
+
+        <button class="timeline-btn" onclick="previousFrame()" title="Previous Frame (←)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="19 20 9 12 19 4 19 20"/>
+                <line x1="5" y1="19" x2="5" y2="5"/>
+            </svg>
+        </button>
+
+        <button class="timeline-btn" onclick="nextFrame()" title="Next Frame (→)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 4 15 12 5 20 5 4"/>
+                <line x1="19" y1="19" x2="19" y2="5"/>
+            </svg>
+        </button>
+
+        <div class="frame-display">
+            <span class="frame-label">Frame:</span>
+            <input type="number" id="frame-input" value="1" min="1" max="2000" onchange="goToFrame(parseInt(this.value))">
+            <span class="frame-total">/ 2000</span>
+        </div>
+
+        <div class="speed-controls">
+            <button class="speed-btn" onclick="decreaseSpeed()" title="Slower">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+            </button>
+            <span class="speed-display" id="speed-display">1x</span>
+            <button class="speed-btn" onclick="increaseSpeed()" title="Faster">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="timeline-slider-container">
+        <input type="range" id="timeline-slider" min="1" max="2000" value="1" oninput="scrubToFrame(parseInt(this.value))">
+        <div class="timeline-markers" id="timeline-markers"></div>
+    </div>
+</div>
+
+<!-- Collaboration Panel -->
+<div id="collab-panel" class="collab-panel">
+    <div class="collab-header">
+        <h3>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Collaboration
+        </h3>
+        <button class="close-btn" onclick="toggleCollabPanel()">×</button>
+    </div>
+
+    <div class="collab-content">
+        <div class="collab-section">
+            <label>Your Session ID:</label>
+            <div class="session-id-box">
+                <input type="text" id="my-session-id" readonly>
+                <button class="copy-btn" onclick="copySessionId()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="hint">Share this ID with others to collaborate</p>
+        </div>
+
+        <div class="collab-section">
+            <label>Join Session:</label>
+            <div class="join-session-box">
+                <input type="text" id="peer-session-id" placeholder="Enter session ID">
+                <button class="join-btn" onclick="connectToPeer()">Connect</button>
+            </div>
+        </div>
+
+        <div class="collab-section">
+            <label>Connected Users (<span id="peer-count">0</span>):</label>
+            <div id="connected-peers" class="connected-peers">
+                <div class="no-peers">No one connected yet</div>
+            </div>
+        </div>
+
+        <div class="collab-status">
+            <div class="status-indicator" id="status-indicator"></div>
+            <span id="status-text">Ready to connect</span>
+        </div>
+    </div>
+</div>
+
+<main>
+    <!-- MAP VIEWPORT -->
+    <div class="map-container">
+        <div class="map-toolbar">
+            <div class="toolbar-group">
+                <button class="tool-btn active" onclick="setTool('draw')" data-tool="draw" title="Draw (Shift+D)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                        <path d="M2 2l7.586 7.586"/>
+                        <circle cx="11" cy="11" r="2"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="setTool('erase')" data-tool="erase" title="Erase (Shift+E)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 20H7L3 16L12 7L21 16V20Z"/>
+                        <path d="M12 7L7 12"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="setTool('line')" data-tool="line" title="Line (Shift+L)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="19" x2="19" y2="5"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="setTool('arrow')" data-tool="arrow" title="Arrow (Shift+A)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+                <div class="divider"></div>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="colorPicker" value="#4fd1c5">
+                    <label for="colorPicker" class="color-label">Color</label>
+                </div>
+                <div class="divider"></div>
+                <button class="tool-btn" onclick="clearCurrentFrame()" title="Clear Current Frame">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="toolbar-group">
+                <button class="tool-btn" onclick="zoom(1.2)" title="Zoom In (+)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                        <line x1="11" y1="8" x2="11" y2="14"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="zoom(0.8)" title="Zoom Out (-)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="resetView()" title="Reset View (R)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                </button>
+                <div class="zoom-display">
+                    <span id="zoom-level">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="map-viewport">
+            <div id="map-world">
+                <img id="map-image" alt="Battlecode map">
+                <canvas id="draw-layer"></canvas>
+            </div>
+        </div>
+
+        <div class="minimap" id="minimap">
+            <canvas id="minimap-canvas"></canvas>
+            <div id="minimap-viewport"></div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sidebar-section">
+            <h2>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Strategy Notes
+            </h2>
+
+            <div class="panel strategy-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setMarkdownMode('edit')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Edit
+                    </button>
+                    <button class="tab-btn" onclick="setMarkdownMode('preview')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Preview
+                    </button>
+                </div>
+                <label for="markdown-input"><textarea id="markdown-input"
+                                                              placeholder="# Frame 1 Strategy
+                                        - Opening moves
+                                        - Unit positioning
+
+                                        ## Expected outcomes
+                                        - Control key areas">
+
+                </textarea>
+                </label>
+                <div id="markdown-preview"></div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h2>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Map Elements
+            </h2>
+
+            <div class="panel">
+                <button class="action-btn" onclick="addUnit()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    Add Unit Icon
+                </button>
+
+                <button class="action-btn" onclick="addMapText()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Add Text Label
+                </button>
+
+                <button class="action-btn" onclick="addMarker()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Add Marker
+                </button>
+
+                <div class="unit-upload">
+                    <label for="unit-file-input" class="file-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Upload Unit PNG
+                    </label>
+                    <input type="file" id="unit-file-input" accept="image/png" onchange="loadUnitImage(event)">
+                    <span class="hint" id="unit-filename">No file selected</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h2>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                </svg>
+                Layers
+            </h2>
+
+            <div class="panel layers-panel">
+                <div class="layer-item">
+                    <input type="checkbox" id="layer-grid" checked onchange="toggleGrid()">
+                    <label for="layer-grid">Grid Overlay</label>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="layer-units" checked onchange="toggleUnits()">
+                    <label for="layer-units">Units</label>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="layer-drawings" checked onchange="toggleDrawings()">
+                    <label for="layer-drawings">Drawings</label>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="shortcuts">
+                <strong>Shortcuts:</strong> Space Play/Pause • ←→ Prev/Next Frame • WASD Pan • Scroll Zoom
+            </div>
+            <div class="credits">
+                Real-Time Collaborative Game Planning Tool
+            </div>
+        </footer>
+    </div>
+</main>
+
+<script src="planner.js"></script>
+</body>
+</html>

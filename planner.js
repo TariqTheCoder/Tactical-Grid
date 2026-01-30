@@ -28,11 +28,9 @@ const state = {
 let peer = null;
 let myPeerId = null;
 let connections = {};
-let isHost = true;
 
 /* ===== INIT PEER CONNECTION ===== */
 function initPeer() {
-    // Initialize PeerJS with public server
     peer = new Peer({
         config: {
             iceServers: [
@@ -61,10 +59,10 @@ function initPeer() {
 
 /* ===== HANDLE PEER CONNECTIONS ===== */
 function handleConnection(conn) {
-    connections[conn.peer] = conn;
-
     conn.on('open', () => {
         console.log('Connected to:', conn.peer);
+        // Only add to connections list after successful connection
+        connections[conn.peer] = conn;
         updatePeersList();
         updateStatus('Connected', true);
 
@@ -77,10 +75,23 @@ function handleConnection(conn) {
     });
 
     conn.on('close', () => {
+        console.log('Connection closed:', conn.peer);
         delete connections[conn.peer];
         updatePeersList();
         if (Object.keys(connections).length === 0) {
             updateStatus('Ready to connect', false);
+        }
+    });
+
+    conn.on('error', (err) => {
+        console.error('Connection error with', conn.peer, err);
+        delete connections[conn.peer];
+        updatePeersList();
+        if (Object.keys(connections).length === 0) {
+            updateStatus('Connection failed - invalid ID', false);
+            setTimeout(() => {
+                updateStatus('Ready to connect', false);
+            }, 3000);
         }
     });
 }
@@ -107,6 +118,24 @@ function connectToPeer() {
 
     updateStatus('Connecting...', false);
     const conn = peer.connect(peerId);
+
+    // Set a timeout for failed connections
+    const timeout = setTimeout(() => {
+        if (!connections[conn.peer]) {
+            console.log('Connection timeout for:', peerId);
+            updateStatus('Connection failed - invalid ID or peer offline', false);
+            setTimeout(() => {
+                if (Object.keys(connections).length === 0) {
+                    updateStatus('Ready to connect', false);
+                }
+            }, 3000);
+        }
+    }, 10000);
+
+    conn.on('open', () => {
+        clearTimeout(timeout);
+    });
+
     handleConnection(conn);
     peerIdInput.value = '';
 }
@@ -115,27 +144,31 @@ function connectToPeer() {
 function broadcastData(data) {
     Object.values(connections).forEach(conn => {
         if (conn.open) {
-            conn.send(data);
+            try {
+                conn.send(data);
+            } catch (err) {
+                console.error('Error broadcasting to', conn.peer, err);
+            }
         }
     });
 }
 
 /* ===== SEND FULL STATE TO NEW PEER ===== */
 function sendFullState(conn) {
-    // Send map image
-    if (mapImage.src && mapImage.src.startsWith('blob:')) {
-        // Note: Blob URLs can't be directly shared, would need to convert to base64
-        // For simplicity, new peers will need to have the map uploaded separately
-    }
+    if (!conn.open) return;
 
-    // Send canvas drawing
-    const canvasData = canvas.toDataURL();
-    conn.send({
-        type: 'fullState',
-        canvas: canvasData,
-        markdown: document.getElementById('markdown-input').value,
-        elements: serializeElements()
-    });
+    try {
+        // Send canvas drawing
+        const canvasData = canvas.toDataURL();
+        conn.send({
+            type: 'fullState',
+            canvas: canvasData,
+            markdown: document.getElementById('markdown-input').value,
+            elements: serializeElements()
+        });
+    } catch (err) {
+        console.error('Error sending full state:', err);
+    }
 }
 
 /* ===== SERIALIZE ELEMENTS ===== */
@@ -156,88 +189,92 @@ function serializeElements() {
 }
 
 /* ===== HANDLE INCOMING DATA ===== */
-function handleIncomingData(data, fromPeer) {
-    switch(data.type) {
-        case 'fullState':
-            // Load canvas
-            if (data.canvas) {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
-                };
-                img.src = data.canvas;
-            }
+function handleIncomingData(data) {
+    try {
+        switch(data.type) {
+            case 'fullState':
+                // Load canvas
+                if (data.canvas) {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = data.canvas;
+                }
 
-            // Load markdown
-            if (data.markdown) {
-                document.getElementById('markdown-input').value = data.markdown;
-            }
+                // Load markdown
+                if (data.markdown) {
+                    document.getElementById('markdown-input').value = data.markdown;
+                }
 
-            // Load elements
-            if (data.elements) {
-                data.elements.forEach(el => {
-                    deserializeElement(el);
-                });
-            }
-            break;
+                // Load elements
+                if (data.elements) {
+                    data.elements.forEach(el => {
+                        deserializeElement(el);
+                    });
+                }
+                break;
 
-        case 'draw':
-            // Remote drawing
-            if (data.tool === 'erase') {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.lineWidth = 20;
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = data.color;
-                ctx.lineWidth = 3;
-            }
+            case 'draw':
+                // Remote drawing
+                if (data.tool === 'erase') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = 20;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = data.color;
+                    ctx.lineWidth = 3;
+                }
 
-            ctx.beginPath();
-            ctx.moveTo(data.startX, data.startY);
-            ctx.lineTo(data.endX, data.endY);
-            ctx.stroke();
-            ctx.globalCompositeOperation = 'source-over';
-            updateMinimap();
-            break;
-
-        case 'line':
-        case 'arrow':
-            ctx.strokeStyle = data.color;
-            ctx.fillStyle = data.color;
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-
-            if (data.type === 'arrow') {
-                drawArrow(data.x1, data.y1, data.x2, data.y2, true);
-            } else {
                 ctx.beginPath();
-                ctx.moveTo(data.x1, data.y1);
-                ctx.lineTo(data.x2, data.y2);
+                ctx.moveTo(data.startX, data.startY);
+                ctx.lineTo(data.endX, data.endY);
                 ctx.stroke();
-            }
-            updateMinimap();
-            break;
+                ctx.globalCompositeOperation = 'source-over';
+                updateMinimap();
+                break;
 
-        case 'clear':
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            updateMinimap();
-            break;
+            case 'line':
+            case 'arrow':
+                ctx.strokeStyle = data.color;
+                ctx.fillStyle = data.color;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
 
-        case 'element':
-            deserializeElement(data.element);
-            break;
+                if (data.type === 'arrow') {
+                    drawArrow(data.x1, data.y1, data.x2, data.y2, true);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(data.x1, data.y1);
+                    ctx.lineTo(data.x2, data.y2);
+                    ctx.stroke();
+                }
+                updateMinimap();
+                break;
 
-        case 'elementMove':
-            updateElementPosition(data.elementId, data.left, data.top);
-            break;
+            case 'clear':
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                updateMinimap();
+                break;
 
-        case 'elementDelete':
-            deleteElement(data.elementId);
-            break;
+            case 'element':
+                deserializeElement(data.element);
+                break;
 
-        case 'markdown':
-            document.getElementById('markdown-input').value = data.content;
-            break;
+            case 'elementMove':
+                updateElementPosition(data.elementId, data.left, data.top);
+                break;
+
+            case 'elementDelete':
+                deleteElement(data.elementId);
+                break;
+
+            case 'markdown':
+                document.getElementById('markdown-input').value = data.content;
+                break;
+        }
+    } catch (err) {
+        console.error('Error handling incoming data:', err);
     }
 }
 
@@ -327,11 +364,12 @@ function updateStatus(text, connected) {
     }
 }
 
-function toggleCollabPanel() {
+// Make functions globally accessible
+window.toggleCollabPanel = function() {
     document.getElementById('collab-panel').classList.toggle('active');
 }
 
-function copySessionId() {
+window.copySessionId = function() {
     const input = document.getElementById('my-session-id');
     input.select();
     document.execCommand('copy');
@@ -343,6 +381,8 @@ function copySessionId() {
         btn.innerHTML = originalHTML;
     }, 1000);
 }
+
+window.connectToPeer = connectToPeer;
 
 /* ===== RESIZE & INIT ===== */
 function resizeToMap(w, h) {
@@ -356,6 +396,13 @@ function resizeToMap(w, h) {
     }
 }
 
+function setDefaultCanvasSize() {
+    // Set a default size when no map is loaded (A4-ish landscape proportions)
+    const defaultWidth = 2000;
+    const defaultHeight = 1414;
+    resizeToMap(defaultWidth, defaultHeight);
+}
+
 /* ===== UNDO SYSTEM ===== */
 function saveState() {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -363,10 +410,11 @@ function saveState() {
     if (undoStack.length > 50) undoStack.shift();
 }
 
-function undo() {
+window.undo = function() {
     if (undoStack.length > 0) {
         const prevState = undoStack.pop();
         ctx.putImageData(prevState, 0, 0);
+        updateMinimap();
     }
 }
 
@@ -492,7 +540,7 @@ function drawLineOrArrow(x1, y1, x2, y2) {
     updateMinimap();
 }
 
-function drawArrow(x1, y1, x2, y2, finalize = true) {
+function drawArrow(x1, y1, x2, y2, commit) {
     const headlen = 15;
     const angle = Math.atan2(y2 - y1, x2 - x1);
 
@@ -516,7 +564,7 @@ function drawArrow(x1, y1, x2, y2, finalize = true) {
     ctx.fill();
 }
 
-function setTool(t) {
+window.setTool = function(t) {
     tool = t;
     lineStart = null;
 
@@ -534,7 +582,7 @@ function setTool(t) {
     }
 }
 
-function clearDraw() {
+window.clearDraw = function() {
     if (confirm('Clear all drawings?')) {
         saveState();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -546,7 +594,7 @@ function clearDraw() {
 }
 
 /* ===== ZOOM ===== */
-function zoom(factor) {
+window.zoom = function(factor) {
     const oldScale = scale;
     scale = Math.max(0.3, Math.min(3, scale * factor));
     mapWorld.style.transform = `scale(${scale})`;
@@ -569,7 +617,7 @@ function updateZoomDisplay() {
     }
 }
 
-function resetView() {
+window.resetView = function() {
     scale = 1;
     mapWorld.style.transform = `scale(${scale})`;
     viewport.scrollLeft = 0;
@@ -581,7 +629,7 @@ function resetView() {
 viewport.addEventListener('wheel', e => {
     if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
-    zoom(e.deltaY < 0 ? 1.1 : 0.9);
+    window.zoom(e.deltaY < 0 ? 1.1 : 0.9);
 }, { passive: false });
 
 viewport.addEventListener('scroll', updateMinimapViewport);
@@ -614,37 +662,37 @@ window.addEventListener('keydown', e => {
 
     if (e.shiftKey && key === 'd') {
         e.preventDefault();
-        setTool('draw');
+        window.setTool('draw');
     }
     if (e.shiftKey && key === 'e') {
         e.preventDefault();
-        setTool('erase');
+        window.setTool('erase');
     }
     if (e.shiftKey && key === 'l') {
         e.preventDefault();
-        setTool('line');
+        window.setTool('line');
     }
     if (e.shiftKey && key === 'a') {
         e.preventDefault();
-        setTool('arrow');
+        window.setTool('arrow');
     }
 
     if ((e.ctrlKey || e.metaKey) && key === 'z') {
         e.preventDefault();
-        undo();
+        window.undo();
     }
 
     if (key === '+' || key === '=') {
         e.preventDefault();
-        zoom(1.1);
+        window.zoom(1.1);
     }
     if (key === '-' || key === '_') {
         e.preventDefault();
-        zoom(0.9);
+        window.zoom(0.9);
     }
     if (key === 'r') {
         e.preventDefault();
-        resetView();
+        window.resetView();
     }
 
     if (e.key === 'ArrowUp') {
@@ -666,7 +714,7 @@ window.addEventListener('keydown', e => {
 });
 
 /* ===== MAP UPLOAD ===== */
-function uploadMap() {
+window.uploadMap = function() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -685,7 +733,7 @@ function uploadMap() {
 }
 
 /* ===== UNITS ===== */
-function loadUnitImage(e) {
+window.loadUnitImage = function(e) {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -698,7 +746,7 @@ function loadUnitImage(e) {
     }
 }
 
-function addUnit() {
+window.addUnit = function() {
     if (!currentUnitImage) {
         alert('Please upload a unit PNG first');
         return;
@@ -731,7 +779,7 @@ function addUnit() {
 }
 
 /* ===== MAP TEXT ===== */
-function addMapText() {
+window.addMapText = function() {
     const text = prompt('Enter label text:');
     if (!text) return;
 
@@ -758,7 +806,7 @@ function addMapText() {
 }
 
 /* ===== MARKERS ===== */
-function addMarker() {
+window.addMarker = function() {
     const div = document.createElement('div');
     div.className = 'marker';
     div.style.left = (viewport.scrollLeft + viewport.clientWidth / 2) / scale + 'px';
@@ -863,7 +911,7 @@ mdInput.addEventListener('input', () => {
     });
 });
 
-function setMarkdownMode(mode) {
+window.setMarkdownMode = function(mode) {
     const editBtn = document.querySelector('.tabs .tab-btn:first-child');
     const previewBtn = document.querySelector('.tabs .tab-btn:last-child');
 
@@ -882,7 +930,7 @@ function setMarkdownMode(mode) {
 }
 
 /* ===== LAYERS ===== */
-function toggleGrid() {
+window.toggleGrid = function() {
     state.layers.grid = !state.layers.grid;
     if (state.layers.grid) {
         viewport.classList.remove('no-grid');
@@ -891,23 +939,41 @@ function toggleGrid() {
     }
 }
 
-function toggleUnits() {
+window.toggleUnits = function() {
     state.layers.units = !state.layers.units;
     document.querySelectorAll('.unit').forEach(unit => {
         unit.style.display = state.layers.units ? 'block' : 'none';
     });
 }
 
-function toggleDrawings() {
+window.toggleDrawings = function() {
     state.layers.drawings = !state.layers.drawings;
     canvas.style.display = state.layers.drawings ? 'block' : 'none';
 }
 
 /* ===== MINIMAP ===== */
 function updateMinimap() {
-    if (!minimapCanvas || !mapImage.src) return;
+    if (!minimapCanvas) return;
 
-    const minimap = document.getElementById('minimap');
+    // If no map image, just show the canvas drawings on a dark background
+    if (!mapImage.src || !mapImage.complete || !mapImage.naturalWidth) {
+        const aspectRatio = canvas.width / canvas.height;
+        minimapCanvas.width = 180;
+        minimapCanvas.height = 180 / aspectRatio;
+
+        // Draw dark background
+        minimapCtx.fillStyle = '#1a1f3a';
+        minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+        // Draw canvas content
+        minimapCtx.globalAlpha = 0.7;
+        minimapCtx.drawImage(canvas, 0, 0, minimapCanvas.width, minimapCanvas.height);
+        minimapCtx.globalAlpha = 1.0;
+
+        updateMinimapViewport();
+        return;
+    }
+
     const aspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
 
     minimapCanvas.width = 180;
@@ -923,10 +989,18 @@ function updateMinimap() {
 }
 
 function updateMinimapViewport() {
-    if (!minimapViewport || !mapImage.src) return;
+    if (!minimapViewport) return;
 
-    const scaleX = minimapCanvas.width / mapImage.naturalWidth;
-    const scaleY = minimapCanvas.height / mapImage.naturalHeight;
+    let scaleX, scaleY;
+
+    // Handle case with no map image
+    if (!mapImage.src || !mapImage.complete || !mapImage.naturalWidth) {
+        scaleX = minimapCanvas.width / canvas.width;
+        scaleY = minimapCanvas.height / canvas.height;
+    } else {
+        scaleX = minimapCanvas.width / mapImage.naturalWidth;
+        scaleY = minimapCanvas.height / mapImage.naturalHeight;
+    }
 
     const vpWidth = viewport.clientWidth / scale;
     const vpHeight = viewport.clientHeight / scale;
@@ -940,12 +1014,7 @@ function updateMinimapViewport() {
 }
 
 /* ===== SNAPSHOT ===== */
-function saveSnapshot() {
-    if (!mapImage.src) {
-        alert('Please upload a map first');
-        return;
-    }
-
+window.saveSnapshot = function() {
     const snap = document.createElement('canvas');
     const viewWidth = viewport.clientWidth;
     const viewHeight = viewport.clientHeight;
@@ -959,7 +1028,34 @@ function saveSnapshot() {
     const sw = viewWidth / scale;
     const sh = viewHeight / scale;
 
-    sctx.drawImage(mapImage, sx, sy, sw, sh, 0, 0, viewWidth, viewHeight);
+    // Draw background
+    if (mapImage.src && mapImage.complete && mapImage.naturalWidth) {
+        // Draw map image if available
+        sctx.drawImage(mapImage, sx, sy, sw, sh, 0, 0, viewWidth, viewHeight);
+    } else {
+        // Draw grid background if no map
+        sctx.fillStyle = '#0f1729';
+        sctx.fillRect(0, 0, viewWidth, viewHeight);
+
+        // Draw grid pattern
+        const gridSize = 20 * scale;
+        sctx.strokeStyle = 'rgba(79, 209, 197, 0.1)';
+        sctx.lineWidth = 1;
+
+        for (let x = -sx * scale % gridSize; x < viewWidth; x += gridSize) {
+            sctx.beginPath();
+            sctx.moveTo(x, 0);
+            sctx.lineTo(x, viewHeight);
+            sctx.stroke();
+        }
+
+        for (let y = -sy * scale % gridSize; y < viewHeight; y += gridSize) {
+            sctx.beginPath();
+            sctx.moveTo(0, y);
+            sctx.lineTo(viewWidth, y);
+            sctx.stroke();
+        }
+    }
 
     if (state.layers.drawings) {
         sctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, viewWidth, viewHeight);
@@ -1026,5 +1122,6 @@ function saveSnapshot() {
 }
 
 /* ===== INIT ===== */
+setDefaultCanvasSize(); // Set default size before map is loaded
 updateZoomDisplay();
 initPeer();
