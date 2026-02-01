@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TacticalGrid - Collaborative Battle Planner</title>
+    <title>TacticalGrid - Battlecode Planner by Tariq Tayebi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <script
-  defer
-  src="https://cloud.umami.is/script.js"
-  data-website-id="cf737a12-1727-4214-8c3b-0a91f596eb1d">
-</script>
+            defer
+            src="https://cloud.umami.is/script.js"
+            data-website-id="cf737a12-1727-4214-8c3b-0a91f596eb1d">
+    </script>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -34,6 +34,14 @@
         <h1>Tactical<span>Grid</span> - Battlecode Planner</h1>
     </div>
     <div class="header-controls">
+        <a href="about.html" class="btn-about">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </svg>
+            About
+        </a>
         <button class="btn-collab" onclick="toggleCollabPanel()" id="collab-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -231,14 +239,14 @@
                     </button>
                 </div>
                 <textarea id="markdown-input" placeholder="# Opening Strategy
-- Early expansion towards resources
-- Defensive positioning on high ground
-- Scout enemy movements
+    - Early expansion towards resources
+    - Defensive positioning on high ground
+    - Scout enemy movements
 
-## Mid Game
-- Control key chokepoints
-- Maintain unit production
-- Coordinate flanking maneuvers"></textarea>
+    ## Mid Game
+    - Control key chokepoints
+    - Maintain unit production
+    - Coordinate flanking maneuvers"></textarea>
                 <div id="markdown-preview"></div>
             </div>
         </div>
@@ -325,6 +333,9 @@
             </div>
             <div class="credits">
                 Real-Time Collaborative Planning Tool
+            </div>
+            <div class="about-link">
+                <a href="about.html">About TacticalGrid</a>
             </div>
         </footer>
     </div>

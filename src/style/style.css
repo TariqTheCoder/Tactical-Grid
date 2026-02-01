@@ -119,6 +119,29 @@ button {
     border-color: var(--accent);
 }
 
+.btn-about {
+    background: transparent;
+    color: var(--text);
+    padding: 9px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-about:hover {
+    background: var(--panel-light);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 .btn-collab {
     background: var(--panel-light);
     color: var(--text);
@@ -871,6 +894,40 @@ footer {
     font-size: 11px;
     color: var(--text-dim);
     text-align: center;
+    margin-bottom: 8px;
+}
+
+.about-link {
+    text-align: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.about-link a {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.about-link a:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+}
+
+.about-link a::after {
+    content: '→';
+    font-size: 14px;
+    transition: transform 0.2s ease;
+}
+
+.about-link a:hover::after {
+    transform: translateX(3px);
 }
 
 @keyframes fadeIn {
